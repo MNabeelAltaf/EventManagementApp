@@ -1,0 +1,37 @@
+
+.profile-container {
+  height: 100vh;
+  background-color: #f4f4f4;
+}
+
+.profile-card {
+  text-align: center;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  background: white;
+  margin: 1.1rem;
+}
+
+@media (max-width: 768px) {
+  .profile-card {
+    padding: 10px;
+  }
+
+  .profile-container {
+    background-color: #ffffff;
+  }
+
+  .profile-card .ant-avatar {
+    width: 80px;
+    height: 80px;
+  }
+
+  .profile-card .ant-btn {
+    font-size: 14px;
+  }
+
+  .profile-card .ant-row {
+    flex-direction: column;
+  }
+}
