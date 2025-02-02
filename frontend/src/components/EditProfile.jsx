@@ -171,7 +171,7 @@ const EditProfile = () => {
             <label>City:</label>
             <Input name="city" value={formData.city} onChange={handleChange} />
           </div>
-<br />
+            <br />
           {/* Event Image */}
           <Form.Item label="User Image">
             <Upload

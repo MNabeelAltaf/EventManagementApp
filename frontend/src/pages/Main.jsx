@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   Input,
@@ -9,13 +9,16 @@ import {
   Form,
   Layout,
 } from "antd";
+import { useNavigate } from "react-router-dom";
 import { PlusOutlined } from "@ant-design/icons";
 import "../styling/main.css";
 import AllEvents from "../components/AllEvents";
 
 const Main = ({ collapsed }) => {
   const BASE_URL = import.meta.env.VITE_NODE_BASE_URL;
+  const navigate = useNavigate();
 
+  const [events, setEvents] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -55,6 +58,8 @@ const Main = ({ collapsed }) => {
     formData.append("location", location);
     formData.append("city", city);
     formData.append("image", image);
+    // hardcoded for noe
+    formData.append("email", "xyz@gmail.com");
 
     try {
       const response = await fetch(`${BASE_URL}/api/create-event`, {
@@ -65,6 +70,7 @@ const Main = ({ collapsed }) => {
       if (response.ok) {
         message.success("Event created successfully!");
         setIsModalOpen(false);
+        navigate("/profile");
       } else {
         message.error("Failed to create event.");
       }
@@ -72,6 +78,26 @@ const Main = ({ collapsed }) => {
       message.error("Error submitting form.");
     }
   };
+
+  const fetchUserEvents = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/all-events`);
+
+      if (!response.ok) {
+        message.error("Failed to fetch events");
+      }
+      const eventData = await response.json();
+      setEvents(eventData);
+
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      message.error("Error fetching events");
+    }
+  };
+
+  useEffect(() => {
+    fetchUserEvents();
+  }, []);
 
   return (
     <>
@@ -186,7 +212,7 @@ const Main = ({ collapsed }) => {
       {/* all events */}
       <Layout className="EventList">
         <h1 className="heading1">All Events</h1>
-        <AllEvents />
+        <AllEvents events={events}/>
       </Layout>
     </>
   );

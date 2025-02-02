@@ -1,3 +1,4 @@
+
 .main-container {
   padding: 20px;
   transition: all 0.3s ease;
@@ -7,11 +8,96 @@
 .main-content {
   width: 100%;
 }
+
+.list-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0.9rem;
+}
+
+.list{
+  width: 80%;
+}
+
+
+.tab-label {
+  font-size: 1.2rem;
+  font-weight: bold;
+  text-align: center;
+  display: block;
+}
+
+
+.list-container {
+  margin-top: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.list-item-card {
+  margin-bottom: 16px;
+  border-radius: 8px;
+  border: 1px solid #f0f0f0;
+  width: 100%;
+
+}
+.event-description {
+  white-space: normal; 
+  word-wrap: break-word; 
+  overflow-wrap: break-word; 
+  text-overflow: ellipsis; 
+  padding: 0 10px; 
+}
+
+
+.ant-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;  
+} 
+
+.tab-container{
+  margin: 0.8rem;
+}
+.list-data-cont-1{
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  white-space: normal; 
+  word-wrap: break-word; 
+  overflow-wrap: break-word; 
+  text-overflow: ellipsis; 
+  padding: 0 10px; 
+
+}
+
+.event-status-tag{
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  margin-top: 4rem;
+
+}
+
+.list-item-image{
+  max-width: 25rem;
+  max-height: 15rem;
+}
+
 @media (max-width: 425px) {
   .main-container {
     display: flex;
     flex-direction: column;
     align-items: center;
+  }
+  .list-item-image{
+    width: 100%;
+  }
+  .event-status-tag{
+    margin-top: 2rem;
   }
 }
 

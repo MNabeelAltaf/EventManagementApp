@@ -5,7 +5,7 @@ import {
   UserOutlined,
   SettingOutlined,
 } from "@ant-design/icons";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Link  } from "react-router-dom";
 import Main from "../pages/Main";
 import Profile from "../pages/Profile";
 import "antd/dist/reset.css";

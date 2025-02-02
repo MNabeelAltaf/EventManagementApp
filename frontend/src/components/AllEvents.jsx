@@ -19,8 +19,8 @@ const IconText = ({ icon, text }) => (
   </Space>
 );
 
-const AllEvents = () => {
-  const BASAE_URL = import.meta.env.VITE_NODE_BASE_URL;
+const AllEvents = ({ events }) => {
+  const BASE_URL = import.meta.env.VITE_NODE_BASE_URL;
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -37,18 +37,23 @@ const AllEvents = () => {
   };
 
   const setJoinEvent = async (item) => {
-    // console.log(item);
-
+    let userId = "123353"; // hardcoded for now
     try {
-      const data = await fetch(`${BASAE_URL}/api/join-event`, {
+      const data = await fetch(`${BASE_URL}/api/join-event`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(item),
+        body: JSON.stringify({
+          event_id: item._id,
+          user_id: userId,
+        }),
       });
 
-      if (!data.ok) {
+    
+      if (data.status == 401) {
+        message.error("Already joined Event");
+      } else if (!data.ok) {
         message.error("Fail to Join Event");
       } else if (data.ok) {
         message.success("Events Joined Sucessfully");
@@ -78,9 +83,46 @@ const AllEvents = () => {
         open={open}
         onCancel={() => setOpen(false)}
       >
-        <p>{selectedItem ? selectedItem.content : "Some contents..."}</p>
-        <p>Some contents...</p>
-        <p>Some contents...</p>
+        <div className="modal-event-details">
+          <p>
+            <strong>Venue:</strong>{" "}
+            {selectedItem
+              ? `${selectedItem.location}, ${selectedItem.city}`
+              : "Loading..."}
+          </p>
+
+          <p>
+            <strong>Start Time:</strong>
+            {selectedItem
+              ? new Date(selectedItem.startTime).toLocaleString()
+              : "Loading..."}
+          </p>
+          <p>
+            <strong>End Time:</strong>
+            {selectedItem
+              ? new Date(selectedItem.endTime).toLocaleString()
+              : "Loading..."}
+          </p>
+
+          <p>
+            <strong>Description:</strong>
+            {selectedItem ? selectedItem.description : "Loading..."}
+          </p>
+
+          <div className="modal-image">
+            {selectedItem && selectedItem.image && (
+              <img
+                src={`${BASE_URL}${selectedItem.image}`}
+                alt={selectedItem.title}
+                style={{
+                  width: "100%",
+                  maxHeight: "300px",
+                  objectFit: "cover",
+                }}
+              />
+            )}
+          </div>
+        </div>
       </Modal>
 
       <List
@@ -93,7 +135,8 @@ const AllEvents = () => {
           pageSize: 15,
           style: { textAlign: "center" },
         }}
-        dataSource={data}
+        // dataSource={data}
+        dataSource={events}
         renderItem={(item) => (
           <List.Item
             className="list-item-card"
@@ -103,16 +146,32 @@ const AllEvents = () => {
               <img
                 className="list-item-image"
                 alt="logo"
-                src="https://gw.alipayobjects.com/zos/rmsportal/mqaQswcyDLcXyDKnZfES.png"
+                src={`${BASE_URL}${item.image}`}
               />
             }
           >
             <List.Item.Meta
-              avatar={<Avatar src={item.avatar} />}
               title={<a href={item.href}>{item.title}</a>}
-              description={item.description}
+              description={`Venue: ${item.location}, ${item.city}`}
+              image={`${BASE_URL}${item.image}`}
             />
-            {item.content}
+            <div className="list-data-cont-1">
+              <p>
+                {`Start time: ${new Date(item.startTime).toLocaleString()}`}
+              </p>
+              <p> {`End time; ${new Date(item.endTime).toLocaleString()}`}</p>
+            </div>
+            <div className="event-description">
+              <p>{item.description}</p>
+            </div>
+
+            <div className="event-status-tag">
+              <div>
+                <Button type="primary" success>
+                  View Details
+                </Button>
+              </div>
+            </div>
           </List.Item>
         )}
       />

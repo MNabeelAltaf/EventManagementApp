@@ -17,8 +17,8 @@ const {
   uploadProfileImage,
   uploadEventImage,
 } = require("./uploadFileConfig");
-// Mongoose Model (Uncomment if needed)
-// const Event = require("./models/Event");
+
+const Event = require("./models/Event");
 
 app.post(
   "/api/edit-profile",
@@ -60,7 +60,7 @@ app.post(
   uploadEventImage.single("image"),
   async (req, res) => {
     try {
-      const { title, description, startTime, endTime, location, city } =
+      const { title, description, startTime, endTime, location, city, email } =
         req.body;
 
       if (
@@ -69,7 +69,8 @@ app.post(
         !startTime ||
         !endTime ||
         !location ||
-        !city
+        !city ||
+        !email
       ) {
         return res.status(400).json({ message: "All fields are required" });
       }
@@ -78,30 +79,20 @@ app.post(
         ? `/${EventImageFolder}/${req.file.filename}`
         : null;
 
-      console.log({
+      const newEvent = new Event({
         title,
         description,
         startTime,
         endTime,
         location,
         city,
-        imagePath,
+        image: imagePath,
+        email,
+        attendees: [],
+        status: "pending",
       });
 
-      // Uncomment this part when using MongoDB
-      /*
-        const newEvent = new Event({
-            title,
-            description,
-            startTime,
-            endTime,
-            location,
-            city,
-            image: imagePath,
-        });
-
-        await newEvent.save();
-        */
+      await newEvent.save();
 
       res
         .status(201)
@@ -112,28 +103,117 @@ app.post(
   }
 );
 
+// join event
 app.post("/api/join-event", async (req, res) => {
+  const { event_id, user_id } = req.body;
+
   try {
-    console.log(req.body);
-    res.status(201).json({ message: "Joined Sucessfully" });
+    const event = await Event.findById(event_id);
+    // also save user id to Users model i.e. join_events = [eventid-1, eventid-2]
+    
+    if (!event) {
+      return res.status(404).json({ message: "Event not found" });
+    }
+
+    if (!event.attendees.includes(user_id)) {
+      event.attendees.push(user_id);
+      await event.save();
+      return res.status(200).json({ message: "Successfully joined the event" });
+    } else {
+      return res
+        .status(401)
+        .json({ message: "You have already joined the event" });
+    }
   } catch (error) {
-    res.status(500).json({ message: "Fail to Join" });
+    console.error("Error joining event:", error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 
-app.get("/api/events", async (req, res) => {
+// get all approved events for main page
+app.get("/api/all-events", async (req, res) => {
   try {
-    res.status(200).json({ message: "Running" });
-
-    // Uncomment when using MongoDB
-    /*
-        const events = await Event.find();
-        res.status(200).json(events);
-        */
+    const events = await Event.find({ status: "approved" });
+    res.status(200).json(events);
   } catch (error) {
     res.status(500).json({ message: "Error fetching events", error });
   }
 });
+
+// get events specific to email (users)
+app.post("/api/user-events", async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).send("Email is required");
+  }
+
+  try {
+    const events = await Event.find({ email: email });
+    res.json(events);
+  } catch (err) {
+    console.error("Error fetching events:", err);
+    res.status(500).send("Server Error");
+  }
+});
+
+// delete event send by user
+app.post("/api/delete-event/:id", async (req, res) => {
+  const eventId = req.params.id;
+  try {
+    const deletedEvent = await Event.findByIdAndDelete(eventId);
+
+    if (deletedEvent) {
+      res.status(200).json({ message: "Event deleted successfully" });
+    } else {
+      res.status(404).json({ message: "Event not found" });
+    }
+  } catch (error) {
+    console.error("Error deleting event:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+// edit event by user
+app.post(
+  "/api/edit-event/:id",
+  uploadEventImage.single("image"),
+  async (req, res) => {
+    const { id } = req.params;
+    const { title, description, startTime, endTime, location, city, image } =
+      req.body;
+
+    try {
+      const existingEvent = await Event.findById(id);
+      if (!existingEvent) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+
+      const imagePath = req.file
+        ? `/${EventImageFolder}/${req.file.filename}`
+        : existingEvent.image;
+
+      const updatedEvent = await Event.findByIdAndUpdate(
+        id,
+        {
+          title,
+          description,
+          startTime,
+          endTime,
+          location,
+          city,
+          image: imagePath,
+        },
+        { new: true }
+      );
+
+      res.status(200).json(updatedEvent);
+    } catch (error) {
+      console.error("Error updating event:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
 
 // Fetch event by ID
 app.get("/api/events/:id", async (req, res) => {
@@ -147,6 +227,12 @@ app.get("/api/events/:id", async (req, res) => {
     res.status(500).json({ message: "Error fetching event", error });
   }
 });
+
+// serve image from eventImages folder
+app.use(
+  `/${EventImageFolder}`,
+  express.static(path.join(__dirname, EventImageFolder))
+);
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
