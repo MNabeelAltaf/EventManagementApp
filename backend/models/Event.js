@@ -9,11 +9,8 @@ const EventSchema = new mongoose.Schema({
   location: { type: String, required: true },
   city: { type: String, required: true },
   image: { type: String, required: false },
-  // organiser email
-  email: { type: String, required: true },
-  attendees: [{ type: Number, required: true }],
-  // when user modal ready 
-  // attendees: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+  email: { type: String, required: true }, // organiser email
+  attendees: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', default:[] }],
   status: { type: String, required: true, default: "pending" },
 });
 

@@ -15,12 +15,15 @@ import {
   DatePicker,
 } from "antd";
 import { EditOutlined, DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { getAuthHeaders } from "../components/TokenValidity";
 
 const Profile = ({ collapsed }) => {
   const [events, setEvents] = useState([]);
   const [pendingEvent, setPendingEvent] = useState([]);
   const [approvedEvent, setApprovedEvent] = useState([]);
   const [rejectedEvent, setRejectedEvent] = useState([]);
+  const [joinEvent, setJoinedEvent] = useState([]);
+  const [sessionData, setSessionData] = useState();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -36,12 +39,14 @@ const Profile = ({ collapsed }) => {
   const [image, setImage] = useState(null);
 
   const BASE_URL = import.meta.env.VITE_NODE_BASE_URL;
+  const headers = getAuthHeaders();
 
   const fetchUserEvents = async (email) => {
     try {
       const response = await fetch(`${BASE_URL}/api/user-events`, {
         method: "POST",
         headers: {
+          ...headers,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ email }),
@@ -76,6 +81,7 @@ const Profile = ({ collapsed }) => {
           {
             method: "POST",
             headers: {
+              ...headers,
               "Content-Type": "application/json",
             },
           }
@@ -138,6 +144,14 @@ const Profile = ({ collapsed }) => {
     setIsEditModalOpen(false);
   };
 
+  const getUserData = () => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
   const editUserEvent = async () => {
     if (selectedEvent) {
       const formDataToSend = new FormData();
@@ -163,6 +177,7 @@ const Profile = ({ collapsed }) => {
           `${BASE_URL}/api/edit-event/${selectedEvent._id}`,
           {
             method: "POST",
+            headers: headers,
             body: formDataToSend,
           }
         );
@@ -186,21 +201,55 @@ const Profile = ({ collapsed }) => {
     }
   };
 
+  const getJoinEvents = async (userId) => {
+    try {
+      const response = await fetch(`${BASE_URL}/api/join-events/${userId}`, {
+        headers: headers,
+        method: "GET",
+      });
+      const events = await response.json();
+
+      if (response.ok) {
+        return events;
+      } else {
+        console.error("Error fetching events:", events.message);
+        return [];
+      }
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      return [];
+    }
+  };
+
   // -------------
   // side-rendering
 
   useEffect(() => {
-    const hardcodedEmail = "xyz@gmail.com";
-    fetchUserEvents(hardcodedEmail);
+    const fetchData = async () => {
+      try {
+        const user = getUserData();
+        setSessionData(user);
+        const userEmail = user.email;
+
+        await fetchUserEvents(userEmail);
+
+        const events = await getJoinEvents(user.userId);
+        setJoinedEvent(events);
+      } catch (error) {
+        console.error("Error in fetchData:", error);
+      }
+    };
+
+    fetchData();
   }, []);
 
   useEffect(() => {
-    const pendingEvents = events.filter((event) => event.status === "pending");
+    const pendingEvents = events.filter((event) => event.status == "pending");
     const approvedEvents = events.filter(
-      (event) => event.status === "approved"
+      (event) => event.status == "approved"
     );
     const rejectedEvents = events.filter(
-      (event) => event.status === "rejected"
+      (event) => event.status == "rejected"
     );
     setPendingEvent(pendingEvents);
     setApprovedEvent(approvedEvents);
@@ -208,7 +257,7 @@ const Profile = ({ collapsed }) => {
   }, [events]);
 
   const onChange = (key) => {
-    console.log(key);
+    // console.log(key);
   };
 
   const items = [
@@ -223,7 +272,7 @@ const Profile = ({ collapsed }) => {
             className="list"
             pagination={{
               onChange: (page) => {
-                console.log(page);
+                // console.log(page);
               },
               pageSize: 15,
               style: { textAlign: "center" },
@@ -364,7 +413,7 @@ const Profile = ({ collapsed }) => {
             className="list"
             pagination={{
               onChange: (page) => {
-                console.log(page);
+                // console.log(page);
               },
               pageSize: 15,
               style: { textAlign: "center" },
@@ -414,7 +463,7 @@ const Profile = ({ collapsed }) => {
     },
     {
       key: "4",
-      label: <span className="tab-label">Join Events</span>,
+      label: <span className="tab-label">Joined Events</span>,
       children: (
         <div className="list-container">
           <List
@@ -423,12 +472,12 @@ const Profile = ({ collapsed }) => {
             className="list"
             pagination={{
               onChange: (page) => {
-                console.log(page);
+                // console.log(page);
               },
               pageSize: 15,
               style: { textAlign: "center" },
             }}
-            dataSource={rejectedEvent}
+            dataSource={joinEvent}
             renderItem={(item) => (
               <List.Item
                 className="list-item-card"
@@ -586,7 +635,16 @@ const Profile = ({ collapsed }) => {
           </div>
         </Modal>
 
-        <Tabs defaultActiveKey="1" items={items} onChange={onChange} centered />
+        {sessionData && !sessionData.isAdmin ? (
+          <Tabs
+            defaultActiveKey="1"
+            items={items}
+            onChange={onChange}
+            centered
+          />
+        ) : (
+          <></>
+        )}
       </div>
     </>
   );

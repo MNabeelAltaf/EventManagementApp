@@ -1,0 +1,27 @@
+.main-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.main-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.dashboard-container {
+  margin: 1.1rem;
+}
+
+.EventList {
+  margin: 1.7rem;
+}
+.heading1 {
+  text-align: center;
+}

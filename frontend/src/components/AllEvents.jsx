@@ -1,16 +1,8 @@
-import React, { useState } from "react"; // Don't forget to import `useState`
+import React, { useState, useLayoutEffect } from "react";
 import { Avatar, List, Space, Modal, Button, message } from "antd";
-import "../styling/AllEvents.css"; // Import the CSS file
-
-const data = Array.from({ length: 23 }).map((_, i) => ({
-  href: "https://ant.design",
-  title: `ant design part ${i}`,
-  avatar: `https://api.dicebear.com/7.x/miniavs/svg?seed=${i}`,
-  description:
-    "Ant Design, a design language for background applications, is refined by Ant UED Team.",
-  content:
-    "We supply a series of design principles, practical patterns and high-quality design resources.",
-}));
+import "../styling/AllEvents.css";
+import { getAuthHeaders } from "../components/TokenValidity";
+import { useNavigate } from "react-router-dom";
 
 const IconText = ({ icon, text }) => (
   <Space>
@@ -21,10 +13,13 @@ const IconText = ({ icon, text }) => (
 
 const AllEvents = ({ events }) => {
   const BASE_URL = import.meta.env.VITE_NODE_BASE_URL;
+  const headers = getAuthHeaders();
+  const navigate = useNavigate();
 
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedItem, setSelectedItem] = useState(null);
+  const [userData, setUserData] = useState();
 
   const openDetails = (item) => {
     setSelectedItem(item);
@@ -37,11 +32,12 @@ const AllEvents = ({ events }) => {
   };
 
   const setJoinEvent = async (item) => {
-    let userId = "123353"; // hardcoded for now
+    let userId = userData.userId;
     try {
       const data = await fetch(`${BASE_URL}/api/join-event`, {
         method: "POST",
         headers: {
+          ...headers,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -50,7 +46,6 @@ const AllEvents = ({ events }) => {
         }),
       });
 
-    
       if (data.status == 401) {
         message.error("Already joined Event");
       } else if (!data.ok) {
@@ -62,23 +57,42 @@ const AllEvents = ({ events }) => {
     setOpen(false);
   };
 
+  const getUserData = () => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
+
+  useLayoutEffect(() => {
+    const user = getUserData();
+    setUserData(user);
+  }, []);
+
+
+
   return (
     <div className="list-container">
       <Modal
         title={<p>{selectedItem ? selectedItem.title : "Loading Modal"}</p>}
         loading={loading}
         footer={[
-          <Button key="cancel" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>,
-          <Button
-            key="ok"
-            type="primary"
-            loading={loading}
-            onClick={() => setJoinEvent(selectedItem)}
-          >
-            Join
-          </Button>,
+          userData && !userData.isAdmin ? (
+            <>
+              <Button key="cancel" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                key="ok"
+                type="primary"
+                loading={loading}
+                onClick={() => setJoinEvent(selectedItem)}
+              >
+                Join
+              </Button>
+            </>
+          ) : null,
         ]}
         open={open}
         onCancel={() => setOpen(false)}
@@ -135,7 +149,6 @@ const AllEvents = ({ events }) => {
           pageSize: 15,
           style: { textAlign: "center" },
         }}
-        // dataSource={data}
         dataSource={events}
         renderItem={(item) => (
           <List.Item

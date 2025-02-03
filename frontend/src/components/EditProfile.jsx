@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Avatar,
   Button,
@@ -16,23 +16,34 @@ import {
   UserOutlined,
   UploadOutlined,
   PlusOutlined,
+  LogoutOutlined,
 } from "@ant-design/icons";
-import "../styling/EditProfile.css"; // Import CSS file
+import "../styling/EditProfile.css";
+import { getAuthHeaders } from "../components/TokenValidity";
+import { useNavigate } from "react-router-dom";
 
 const EditProfile = () => {
   const BASE_URL = import.meta.env.VITE_NODE_BASE_URL;
+  const headers = getAuthHeaders();
+  const navigate = useNavigate();
 
+  const [userData, setUserData] = useState();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    city: "New York",
-    currentPassword: "",
+    name: "",
+    email: "",
     newPassword: "",
     confirmPassword: "",
+    image: "",
   });
 
-  const [image, setImage] = useState(null); // To store the uploaded image file
+  const [image, setImage] = useState(null);
+
+  const logout = () => {
+    localStorage.removeItem("user");
+    localStorage.removeItem("authToken");
+    navigate("/login");
+  };
 
   const handleChange = (e) => {
     setFormData((prevData) => ({
@@ -49,12 +60,15 @@ const EditProfile = () => {
     setIsModalOpen(false);
   };
 
-  const EditData = async () => {
-    if (!formData.currentPassword.trim()) {
-      message.error("Please fill in the current password field!");
-      return;
+  const getUserData = () => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      return JSON.parse(userData);
     }
+    return null;
+  };
 
+  const EditData = async () => {
     if (formData.newPassword !== formData.confirmPassword) {
       message.error("New password and confirm password do not match!");
       return;
@@ -63,31 +77,62 @@ const EditProfile = () => {
     const editData = new FormData();
     editData.append("name", formData.name);
     editData.append("email", formData.email);
-    editData.append("city", formData.city);
-    editData.append("currentPassword", formData.currentPassword);
-    editData.append("newPassword", formData.newPassword);
+
+    if (formData.newPassword) {
+      editData.append("newPassword", formData.newPassword);
+    }
+
     editData.append("confirmPassword", formData.confirmPassword);
 
     if (image) {
-      editData.append("userImage", image); 
+      editData.append("userImage", image);
     }
 
     try {
       const response = await fetch(`${BASE_URL}/api/edit-profile`, {
         method: "POST",
+        headers: headers,
         body: editData,
       });
 
       if (response.ok) {
+        const responseData = await response.json();
         message.success("Profile updated successfully!");
+        localStorage.setItem("user", JSON.stringify(responseData));
+        setUserData(responseData);
+        setFormData({
+          userId: responseData.id,
+          name: responseData.name || "",
+          email: responseData.email || "",
+          image: responseData.image || "",
+          isAdmin: responseData.isAdmin ? true : false,
+        });
         setIsModalOpen(false);
       } else {
-        message.error("Failed to update profile!");
+        const errorData = await response.json();
+        message.error(errorData.message || "Failed to update profile!");
       }
     } catch (error) {
       message.error("Error while updating profile!");
     }
   };
+
+  useEffect(() => {
+    const user = getUserData();
+    setUserData(user);
+  }, []);
+
+  useEffect(() => {
+    if (userData) {
+      setFormData({
+        userId: userData.userId || "",
+        name: userData.name || "",
+        email: userData.email || "",
+        image: userData.image,
+        isAdmin: userData.isAdmin ? true : false,
+      });
+    }
+  }, [userData]);
 
   return (
     <div className="profile-container">
@@ -102,10 +147,17 @@ const EditProfile = () => {
             xl={8}
             style={{ textAlign: "center", marginBottom: "20px" }}
           >
-            <Avatar size={100} src={formData.avatar} icon={<UserOutlined />} />
+            <img
+              src={
+                userData?.image
+                  ? `${BASE_URL}${formData.image}`
+                  : "https://img.freepik.com/free-vector/blue-circle-with-white-user_78370-4707.jpg?t=st=1738609656~exp=1738613256~hmac=2a03e2396832ab5d7c3e8de85afcff45c4b030d88e4d9af491cdc5074aaa7a1c&w=740"
+              }
+              alt="Profile"
+              style={{ width: "100px", height: "100px", borderRadius: "50%" }}
+            />
           </Col>
 
-          {/* Second Column: Profile Info */}
           <Col
             xs={24}
             sm={16}
@@ -123,9 +175,6 @@ const EditProfile = () => {
                 <strong>Email:</strong> {formData.email}
               </Col>
               <br />
-              <Col xs={24} sm={8}>
-                <strong>City:</strong> {formData.city}
-              </Col>
             </Row>
             <Row justify="center" style={{ marginTop: "3.1rem" }}>
               <Col>
@@ -135,6 +184,17 @@ const EditProfile = () => {
                   onClick={showModal}
                 >
                   Edit Profile
+                </Button>
+              </Col>
+              &nbsp; &nbsp;
+              <Col>
+                <Button
+                  type="primary"
+                  icon={<LogoutOutlined />}
+                  onClick={logout}
+                  danger
+                >
+                  Logout
                 </Button>
               </Col>
             </Row>
@@ -150,28 +210,21 @@ const EditProfile = () => {
         okText="Edit"
       >
         <div>
-          {/* Name */}
           <div>
             <label>Name:</label>
             <Input name="name" value={formData.name} onChange={handleChange} />
           </div>
 
-          {/* Email */}
           <div>
             <label>Email:</label>
             <Input
               name="email"
               value={formData.email}
               onChange={handleChange}
+              disabled
             />
           </div>
-
-          {/* City */}
-          <div>
-            <label>City:</label>
-            <Input name="city" value={formData.city} onChange={handleChange} />
-          </div>
-            <br />
+          <br />
           {/* Event Image */}
           <Form.Item label="User Image">
             <Upload
@@ -191,18 +244,6 @@ const EditProfile = () => {
             </Upload>
             {image && <p>Uploaded Image: {image.name}</p>}
           </Form.Item>
-
-          {/* Current Password */}
-          <div>
-            <label>
-              <span style={{ color: "red" }}>* </span>Current Password:
-            </label>
-            <Input.Password
-              name="currentPassword"
-              value={formData.currentPassword}
-              onChange={handleChange}
-            />
-          </div>
 
           {/* New Password */}
           <div>

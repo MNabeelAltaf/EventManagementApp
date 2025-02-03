@@ -13,10 +13,12 @@ import { useNavigate } from "react-router-dom";
 import { PlusOutlined } from "@ant-design/icons";
 import "../styling/main.css";
 import AllEvents from "../components/AllEvents";
+import { getAuthHeaders } from "../components/TokenValidity";
 
 const Main = ({ collapsed }) => {
   const BASE_URL = import.meta.env.VITE_NODE_BASE_URL;
   const navigate = useNavigate();
+  const headers = getAuthHeaders();
 
   const [events, setEvents] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,6 +29,7 @@ const Main = ({ collapsed }) => {
   const [location, setLocation] = useState("");
   const [city, setCity] = useState("");
   const [image, setImage] = useState(null);
+  const [sessionData, setSessionData] = useState();
 
   const showModal = () => {
     setIsModalOpen(true);
@@ -58,19 +61,19 @@ const Main = ({ collapsed }) => {
     formData.append("location", location);
     formData.append("city", city);
     formData.append("image", image);
-    // hardcoded for noe
-    formData.append("email", "xyz@gmail.com");
+    formData.append("email", sessionData.email);
 
     try {
       const response = await fetch(`${BASE_URL}/api/create-event`, {
         method: "POST",
+        headers: headers,
         body: formData,
       });
 
       if (response.ok) {
         message.success("Event created successfully!");
         setIsModalOpen(false);
-        navigate("/profile");
+        navigate("/index/profile");
       } else {
         message.error("Failed to create event.");
       }
@@ -81,21 +84,49 @@ const Main = ({ collapsed }) => {
 
   const fetchUserEvents = async () => {
     try {
-      const response = await fetch(`${BASE_URL}/api/all-events`);
-
+      const token = localStorage.getItem("authToken");  
+      const response = await fetch(`${BASE_URL}/api/all-events`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
+  
       if (!response.ok) {
-        message.error("Failed to fetch events");
+        const errorData = await response.json();
+        if (errorData.message === "Invalid token") {
+          localStorage.removeItem("authToken");
+          window.location.href = "/login";
+        } else {
+          console.error(errorData.message);
+          message.error("Failed to fetch events");
+        }
       }
+  
       const eventData = await response.json();
       setEvents(eventData);
-
     } catch (error) {
       console.error("Error fetching events:", error);
       message.error("Error fetching events");
     }
   };
+  
+
+  const getUserData = () => {
+    const userData = localStorage.getItem("user");
+    if (userData) {
+      return JSON.parse(userData);
+    }
+    return null;
+  };
 
   useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      window.location.href = "/login";
+    }
+
+    const user = getUserData();
+    setSessionData(user);
+
     fetchUserEvents();
   }, []);
 
@@ -109,7 +140,7 @@ const Main = ({ collapsed }) => {
               Create Event
             </Button>
           </div>
-          {/* modal for creating events */}
+          {/* creating events modal */}
           <Modal
             title="Create Event"
             open={isModalOpen}
@@ -211,8 +242,8 @@ const Main = ({ collapsed }) => {
 
       {/* all events */}
       <Layout className="EventList">
-        <h1 className="heading1">All Events</h1>
-        <AllEvents events={events}/>
+        <h1 className="heading1">All Active Events</h1>
+        <AllEvents events={events} />
       </Layout>
     </>
   );
