@@ -1,0 +1,2 @@
+#this is base url for nodejs 
+VITE_NODE_BASE_URL=<value>
