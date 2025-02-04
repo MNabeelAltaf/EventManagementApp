@@ -11,7 +11,7 @@ import {
 } from "antd";
 import { useNavigate } from "react-router-dom";
 import { PlusOutlined } from "@ant-design/icons";
-import "../styling/main.css";
+import "../styling/Main.css";
 import AllEvents from "../components/AllEvents";
 import { getAuthHeaders } from "../components/TokenValidity";
 

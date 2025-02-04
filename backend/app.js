@@ -25,6 +25,12 @@ const {
 const Event = require("./models/Event");
 const User = require("./models/Users");
 
+
+app.get('/test-docker',async(req,res)=>{
+  return res.status(201).json({ message: "Backend Running" });
+})
+
+
 // signup
 app.post("/api/signup", async (req, res) => {
   try {
@@ -47,12 +53,12 @@ app.post("/api/signup", async (req, res) => {
     });
 
     await newUser.save();
-    return res.status(201).json({ message: "User registered successfully" }); // Ensure a JSON response here
+    return res.status(201).json({ message: "User registered successfully" }); 
   } catch (error) {
     console.error("Signup Error:", error);
     return res
       .status(500)
-      .json({ message: "Server error. Please try again later." }); // JSON error response
+      .json({ message: "Server error. Please try again later." }); 
   }
 });
 

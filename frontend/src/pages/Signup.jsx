@@ -39,13 +39,13 @@ const Signup = () => {
         body: JSON.stringify(userData),
       });
 
-      const data = await response.json();
-
       if (response.ok) {
+        const data = await response.json();
         message.success("Signup successful!");
         navigate("/login");
       } else {
-        message.error(data.message || "Signup failed!");
+        const data = await response.json().catch(() => null); // In case there's no JSON or an empty response
+        message.error(data?.message || "Signup failed!");
       }
     } catch (error) {
       message.error("An error occurred. Please try again.");
